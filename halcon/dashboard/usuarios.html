@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halcón — Gestión de Usuarios</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <h2>🦅 Halcón — Gestión de Usuarios</h2>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <span id="nombre-usuario"></span>
+      <button onclick="window.location.href='dashboard.html'"
+        style="width:auto; padding:8px 16px; background:#6c757d;">
+        ← Volver
+      </button>
+    </div>
+  </nav>
+
+  <div class="contenedor">
+
+    <div id="mensaje-exito" class="success-msg hidden"></div>
+
+    <!-- FORMULARIO NUEVO USUARIO -->
+    <div class="card">
+      <h3 style="margin-bottom:20px;">➕ Registrar nuevo usuario</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombre completo *</label>
+          <input type="text" id="nuevo-nombre" placeholder="Nombre del empleado">
+        </div>
+        <div class="form-group">
+          <label>Usuario *</label>
+          <input type="text" id="nuevo-usuario" placeholder="Nombre de usuario para login">
+        </div>
+        <div class="form-group">
+          <label>Contraseña *</label>
+          <input type="password" id="nuevo-password" placeholder="Contraseña">
+        </div>
+        <div class="form-group">
+          <label>Rol / Departamento *</label>
+          <select id="nuevo-rol">
+            <option value="ventas">Ventas</option>
+            <option value="compras">Compras</option>
+            <option value="almacen">Almacén</option>
+            <option value="ruta">Ruta</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+      <div id="error-nuevo" class="error-msg hidden"></div>
+      <button onclick="crearUsuario()"
+        class="btn-verde" style="width:auto; padding:10px 24px; margin-top:5px;">
+        ✅ Crear usuario
+      </button>
+    </div>
+
+    <!-- LISTA DE USUARIOS -->
+    <div class="card">
+      <h3 style="margin-bottom:20px;">👥 Usuarios registrados</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-usuarios"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL EDITAR USUARIO -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h4 style="margin-bottom:20px;">✏️ Editar usuario</h4>
+      <input type="hidden" id="edit-id">
+      <div class="form-group">
+        <label>Nombre completo</label>
+        <input type="text" id="edit-nombre">
+      </div>
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" id="edit-usuario">
+      </div>
+      <div class="form-group">
+        <label>Nueva contraseña <span style="color:#888;">(dejar vacío para no cambiar)</span></label>
+        <input type="password" id="edit-password" placeholder="Nueva contraseña">
+      </div>
+      <div class="form-group">
+        <label>Rol</label>
+        <select id="edit-rol">
+          <option value="ventas">Ventas</option>
+          <option value="compras">Compras</option>
+          <option value="almacen">Almacén</option>
+          <option value="ruta">Ruta</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button onclick="guardarEdicionUsuario()"
+          class="btn-verde" style="width:auto; padding:10px 20px;">
+          💾 Guardar
+        </button>
+        <button onclick="cerrarModal()"
+          class="btn-secundario" style="width:auto; padding:10px 20px;">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+      requiereLogin();
+      // Solo admin puede entrar
+      if (!tieneRol('admin')) {
+        alert('Acceso denegado');
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      const sesion = getSesion();
+      document.getElementById('nombre-usuario').textContent =
+        `👤 ${sesion.nombre} (${sesion.rol})`;
+      renderUsuarios();
+    });
+
+    function renderUsuarios() {
+      const tbody = document.getElementById('cuerpo-usuarios');
+      const usuarios = getUsuarios();
+      tbody.innerHTML = '';
+
+      usuarios.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${u.nombre}</td>
+          <td><code>${u.usuario}</code></td>
+          <td><span class="badge badge-rol-${u.rol}">${getRolLabel(u.rol)}</span></td>
+          <td>
+            <span class="badge ${u.activo ? 'badge-entregado' : 'badge-ordenado'}">
+              ${u.activo ? 'Activo' : 'Inactivo'}
+            </span>
+          </td>
+          <td style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button onclick="abrirModal(${u.id})"
+              style="width:auto; padding:6px 12px; font-size:0.85rem; background:#1a1a2e;">
+              ✏️ Editar
+            </button>
+            ${u.usuario !== 'admin' ? `
+            <button onclick="toggleUsuario(${u.id})"
+              style="width:auto; padding:6px 12px; font-size:0.85rem;"
+              class="${u.activo ? 'btn-secundario' : 'btn-verde'}">
+              ${u.activo ? '🚫 Desactivar' : '✅ Activar'}
+            </button>` : ''}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function crearUsuario() {
+      const nombre   = document.getElementById('nuevo-nombre').value.trim();
+      const usuario  = document.getElementById('nuevo-usuario').value.trim();
+      const password = document.getElementById('nuevo-password').value.trim();
+      const rol      = document.getElementById('nuevo-rol').value;
+      const errorEl  = document.getElementById('error-nuevo');
+
+      if (!nombre || !usuario || !password) {
+        errorEl.textContent = '⚠️ Completa todos los campos obligatorios';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Verificar que el usuario no exista
+      const usuarios = getUsuarios();
+      if (usuarios.find(u => u.usuario === usuario)) {
+        errorEl.textContent = '⚠️ Ese nombre de usuario ya existe';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      errorEl.classList.add('hidden');
+
+      const nuevo = {
+        id: Date.now(),
+        nombre,
+        usuario,
+        password,
+        rol,
+        activo: true
+      };
+
+      usuarios.push(nuevo);
+      saveUsuarios(usuarios);
+
+      // Limpiar formulario
+      document.getElementById('nuevo-nombre').value   = '';
+      document.getElementById('nuevo-usuario').value  = '';
+      document.getElementById('nuevo-password').value = '';
+      document.getElementById('nuevo-rol').value      = 'ventas';
+
+      mostrarExito('✅ Usuario creado correctamente');
+      renderUsuarios();
+    }
+
+    function toggleUsuario(id) {
+      const usuarios = getUsuarios();
+      const idx = usuarios.findIndex(u => u.id === id);
+      if (idx === -1) return;
+      usuarios[idx].activo = !usuarios[idx].activo;
+      saveUsuarios(usuarios);
+      renderUsuarios();
+    }
+
+    function abrirModal(id) {
+      const u = getUsuarioById(id);
+      if (!u) return;
+      document.getElementById('edit-id').value       = u.id;
+      document.getElementById('edit-nombre').value   = u.nombre;
+      document.getElementById('edit-usuario').value  = u.usuario;
+      document.getElementById('edit-password').value = '';
+      document.getElementById('edit-rol').value      = u.rol;
+      document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-overlay').classList.add('hidden');
+    }
+
+    function guardarEdicionUsuario() {
+      const id       = parseInt(document.getElementById('edit-id').value);
+      const nombre   = document.getElementById('edit-nombre').value.trim();
+      const usuario  = document.getElementById('edit-usuario').value.trim();
+      const password = document.getElementById('edit-password').value.trim();
+      const rol      = document.getElementById('edit-rol').value;
+
+      if (!nombre || !usuario) {
+        alert('Nombre y usuario son obligatorios');
+        return;
+      }
+
+      const usuarios = getUsuarios();
+      const idx = usuarios.findIndex(u => u.id === id);
+      if (idx === -1) return;
+
+      usuarios[idx].nombre  = nombre;
+      usuarios[idx].usuario = usuario;
+      usuarios[idx].rol     = rol;
+      if (password) usuarios[idx].password = password;
+
+      saveUsuarios(usuarios);
+      cerrarModal();
+      mostrarExito('✅ Usuario actualizado correctamente');
+      renderUsuarios();
+    }
+
+    function getRolLabel(rol) {
+      const labels = {
+        admin:    'Administrador',
+        ventas:   'Ventas',
+        compras:  'Compras',
+        almacen:  'Almacén',
+        ruta:     'Ruta'
+      };
+      return labels[rol] || rol;
+    }
+
+    function mostrarExito(texto) {
+      const el = document.getElementById('mensaje-exito');
+      el.textContent = texto;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 3000);
+    }
+
+  </script>
+</body>
+</html>

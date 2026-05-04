@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halcón — Pedidos Eliminados</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <h2>🦅 Halcón — Pedidos Eliminados</h2>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <span id="nombre-usuario"></span>
+      <button onclick="window.location.href='dashboard.html'"
+        style="width:auto; padding:8px 16px; background:#6c757d;">
+        ← Volver
+      </button>
+    </div>
+  </nav>
+
+  <div class="contenedor">
+
+    <div id="mensaje-exito" class="success-msg hidden"></div>
+
+    <div class="card">
+      <h3 style="margin-bottom:20px;">🗑️ Papelera de pedidos</h3>
+
+      <div id="sin-eliminados" class="hidden"
+        style="text-align:center; padding:40px; color:#888;">
+        <p style="font-size:2rem;">✅</p>
+        <p>No hay pedidos eliminados</p>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table id="tabla-eliminados">
+          <thead>
+            <tr>
+              <th>Factura #</th>
+              <th>Cliente</th>
+              <th>N° Cliente</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-tabla"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/pedidos.js"></script>
+  <script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+      requiereLogin();
+      const sesion = getSesion();
+      document.getElementById('nombre-usuario').textContent =
+        `👤 ${sesion.nombre} (${sesion.rol})`;
+      renderTablaEliminados();
+    });
+
+    function renderTablaEliminados() {
+      const eliminados = getPedidos().filter(p => p.eliminado);
+      const tbody = document.getElementById('cuerpo-tabla');
+      const sinEl = document.getElementById('sin-eliminados');
+      const tabla = document.getElementById('tabla-eliminados');
+
+      tbody.innerHTML = '';
+
+      if (eliminados.length === 0) {
+        sinEl.classList.remove('hidden');
+        tabla.style.display = 'none';
+        return;
+      }
+
+      sinEl.classList.add('hidden');
+      tabla.style.display = 'table';
+
+      eliminados.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>#${p.factura}</strong></td>
+          <td>${p.nombreCliente}</td>
+          <td>${p.numeroCliente}</td>
+          <td>${formatearFecha(p.fecha)}</td>
+          <td><span class="badge ${getBadgeClase(p.estado)}">${p.estado}</span></td>
+          <td style="display:flex; gap:8px;">
+            <button onclick="window.location.href='pedido-detalle.html?id=${p.id}'"
+              style="width:auto; padding:6px 12px; font-size:0.85rem;
+              background:#1a1a2e;">
+              ✏️ Editar
+            </button>
+            <button onclick="restaurar(${p.id})"
+              style="width:auto; padding:6px 12px; font-size:0.85rem;"
+              class="btn-verde">
+              ♻️ Restaurar
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function restaurar(id) {
+      if (!confirm('¿Restaurar este pedido a la lista principal?')) return;
+      restaurarPedido(id);
+      const el = document.getElementById('mensaje-exito');
+      el.textContent = '♻️ Pedido restaurado correctamente';
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 3000);
+      renderTablaEliminados();
+    }
+
+    function formatearFecha(fechaISO) {
+      const d = new Date(fechaISO);
+      return d.toLocaleDateString('es-MX', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function getBadgeClase(estado) {
+      const clases = {
+        'Ordenado':   'badge-ordenado',
+        'En proceso': 'badge-proceso',
+        'En ruta':    'badge-ruta',
+        'Entregado':  'badge-entregado'
+      };
+      return clases[estado] || '';
+    }
+
+  </script>
+</body>
+</html>

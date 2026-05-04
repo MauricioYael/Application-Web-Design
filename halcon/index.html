@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halcón — Consulta tu Pedido</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="login-page">
+
+  <div class="consulta-card">
+
+    <div style="text-align:center; margin-bottom:30px;">
+      <h1 style="font-size:2.5rem;">🦅</h1>
+      <h2 style="color:#1a1a2e;">Halcón</h2>
+      <p style="color:#888; font-size:0.9rem;">Distribuidora de Materiales de Construcción</p>
+    </div>
+
+    <h3 style="margin-bottom:5px; text-align:center;">Consulta el estado de tu pedido</h3>
+    <p style="color:#888; font-size:0.85rem; text-align:center; margin-bottom:25px;">
+      Ingresa tus datos para conocer el estatus de tu orden
+    </p>
+
+    <div id="error-msg" class="error-msg hidden">
+      No se encontró ningún pedido con esos datos. Verifica tu número de cliente y factura.
+    </div>
+
+    <div class="form-group">
+      <label>Número de cliente</label>
+      <input type="text" id="numeroCliente" placeholder="Ej: CLI-001">
+    </div>
+
+    <div class="form-group">
+      <label>Número de factura</label>
+      <input type="text" id="numeroFactura" placeholder="Ej: 1001">
+    </div>
+
+    <button onclick="consultarPedido()">🔍 Consultar pedido</button>
+
+    <a href="login.html" class="link-consulta">
+      ¿Eres empleado? Accede al sistema aquí
+    </a>
+
+    <!-- RESULTADO DE LA CONSULTA -->
+    <div id="resultado" class="hidden">
+
+      <div style="border-top: 2px solid #f0f2f5; margin: 25px 0;"></div>
+
+      <h4 style="margin-bottom:15px;">📦 Información de tu pedido</h4>
+
+      <div class="resultado-grid">
+        <div class="resultado-item">
+          <span class="resultado-label">Factura #</span>
+          <span id="res-factura" class="resultado-valor"></span>
+        </div>
+        <div class="resultado-item">
+          <span class="resultado-label">Cliente</span>
+          <span id="res-cliente" class="resultado-valor"></span>
+        </div>
+        <div class="resultado-item">
+          <span class="resultado-label">Fecha del pedido</span>
+          <span id="res-fecha" class="resultado-valor"></span>
+        </div>
+        <div class="resultado-item">
+          <span class="resultado-label">Dirección de entrega</span>
+          <span id="res-direccion" class="resultado-valor"></span>
+        </div>
+      </div>
+
+      <!-- ESTADO VISUAL -->
+      <div style="text-align:center; margin: 25px 0;">
+        <p style="color:#888; font-size:0.85rem; margin-bottom:10px;">Estado actual</p>
+        <span id="res-badge" class="badge" style="font-size:1.1rem; padding:10px 24px;"></span>
+      </div>
+
+      <!-- LÍNEA DE TIEMPO DEL PEDIDO -->
+      <div id="timeline" style="margin: 20px 0;"></div>
+
+      <!-- FOTO DE ENTREGA (solo si está entregado) -->
+      <div id="seccion-foto-entrega" class="hidden">
+        <div style="border-top: 2px solid #f0f2f5; margin: 20px 0;"></div>
+        <h4 style="margin-bottom:15px; color:#155724;">
+          ✅ Evidencia de entrega
+        </h4>
+        <p style="color:#888; font-size:0.85rem; margin-bottom:10px;">
+          Tu pedido fue entregado. Aquí está la fotografía como evidencia:
+        </p>
+        <img id="foto-evidencia"
+          style="width:100%; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+
+    // Permite buscar con Enter
+    document.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') consultarPedido();
+    });
+
+    function consultarPedido() {
+      const numeroCliente = document.getElementById('numeroCliente').value.trim();
+      const numeroFactura = document.getElementById('numeroFactura').value.trim();
+      const errorEl       = document.getElementById('error-msg');
+      const resultadoEl   = document.getElementById('resultado');
+
+      // Ocultamos resultados anteriores
+      resultadoEl.classList.add('hidden');
+      errorEl.classList.add('hidden');
+
+      if (!numeroCliente || !numeroFactura) {
+        errorEl.textContent = '⚠️ Por favor ingresa ambos datos para consultar.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Buscamos el pedido
+      const pedidos = getPedidos();
+      const pedido = pedidos.find(p =>
+        p.numeroCliente.toLowerCase() === numeroCliente.toLowerCase() &&
+        String(p.factura) === String(numeroFactura) &&
+        !p.eliminado
+      );
+
+      if (!pedido) {
+        errorEl.textContent =
+          'No se encontró ningún pedido con esos datos. Verifica tu número de cliente y factura.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Mostramos el resultado
+      mostrarResultado(pedido);
+    }
+
+    function mostrarResultado(p) {
+      const resultadoEl = document.getElementById('resultado');
+
+      document.getElementById('res-factura').textContent  = `#${p.factura}`;
+      document.getElementById('res-cliente').textContent  = p.nombreCliente;
+      document.getElementById('res-fecha').textContent    = formatearFecha(p.fecha);
+      document.getElementById('res-direccion').textContent = p.direccionEntrega;
+
+      const badge = document.getElementById('res-badge');
+      badge.textContent = p.estado;
+      badge.className = `badge ${getBadgeClase(p.estado)}`;
+
+      // Timeline de estados
+      renderTimeline(p);
+
+      // Foto de entrega solo si está entregado
+      const seccionFoto = document.getElementById('seccion-foto-entrega');
+      if (p.estado === 'Entregado' && p.fotoEntrega) {
+        document.getElementById('foto-evidencia').src = p.fotoEntrega;
+        seccionFoto.classList.remove('hidden');
+      } else {
+        seccionFoto.classList.add('hidden');
+      }
+
+      resultadoEl.classList.remove('hidden');
+    }
+
+    function renderTimeline(p) {
+      const pasos = ['Ordenado', 'En proceso', 'En ruta', 'Entregado'];
+      const estadoActual = p.estado;
+      const indexActual  = pasos.indexOf(estadoActual);
+      const timeline     = document.getElementById('timeline');
+
+      timeline.innerHTML = `
+        <p style="color:#888; font-size:0.85rem; margin-bottom:12px;">
+          Progreso del pedido
+        </p>
+        <div class="timeline-pasos">
+          ${pasos.map((paso, i) => {
+            let clase = 'paso-pendiente';
+            if (i < indexActual)  clase = 'paso-completado';
+            if (i === indexActual) clase = 'paso-actual';
+            return `
+              <div class="timeline-paso ${clase}">
+                <div class="paso-circulo">${i < indexActual ? '✓' : i + 1}</div>
+                <div class="paso-label">${paso}</div>
+              </div>
+              ${i < pasos.length - 1 ? `<div class="paso-linea ${i < indexActual ? 'linea-completa' : ''}"></div>` : ''}
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function formatearFecha(fechaISO) {
+      const d = new Date(fechaISO);
+      return d.toLocaleDateString('es-MX', {
+        day: '2-digit', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function getBadgeClase(estado) {
+      const clases = {
+        'Ordenado':   'badge-ordenado',
+        'En proceso': 'badge-proceso',
+        'En ruta':    'badge-ruta',
+        'Entregado':  'badge-entregado'
+      };
+      return clases[estado] || '';
+    }
+
+  </script>
+</body>
+</html>

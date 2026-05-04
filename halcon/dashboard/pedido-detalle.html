@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halcón — Detalle del Pedido</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <h2>🦅 Halcón — Detalle del Pedido</h2>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <span id="nombre-usuario"></span>
+      <button onclick="window.location.href='dashboard.html'"
+        style="width:auto; padding:8px 16px; background:#6c757d;">
+        ← Volver
+      </button>
+    </div>
+  </nav>
+
+  <div class="contenedor">
+
+    <!-- ENCABEZADO DEL PEDIDO -->
+    <div class="card" style="display:flex; justify-content:space-between;
+      align-items:center; flex-wrap:wrap; gap:15px;">
+      <div>
+        <h2 id="titulo-pedido">Pedido #</h2>
+        <p id="fecha-pedido" style="color:#888; font-size:0.9rem;"></p>
+      </div>
+      <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+        <span id="badge-estado" class="badge" style="font-size:1rem; padding:8px 18px;"></span>
+        <!-- Solo admin y ventas pueden eliminar -->
+        <button id="btn-eliminar" onclick="eliminarEstePedido()"
+          style="width:auto; padding:8px 16px; background:#dc3545;">
+          🗑️ Eliminar
+        </button>
+      </div>
+    </div>
+
+    <!-- CAMBIO DE ESTADO (según rol) -->
+    <div id="seccion-estado" class="card hidden">
+      <h4 style="margin-bottom:15px;">🔄 Cambiar estado del pedido</h4>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;" id="botones-estado">
+        <!-- Se generan dinámicamente según el rol -->
+      </div>
+    </div>
+
+    <!-- FOTOS (solo Ruta) -->
+    <div id="seccion-fotos" class="card hidden">
+      <h4 style="margin-bottom:15px;">📷 Evidencias fotográficas</h4>
+      <div class="form-grid">
+
+        <div>
+          <p style="font-weight:600; margin-bottom:8px;">Foto: Unidad cargada</p>
+          <div id="preview-cargada" class="foto-preview hidden"></div>
+          <input type="file" id="foto-cargada" accept="image/*"
+            onchange="previsualizarFoto(this, 'preview-cargada')"
+            style="margin-bottom:8px;">
+          <button onclick="subirFoto('fotoUnidadCargada', 'foto-cargada')"
+            style="width:auto; padding:8px 16px;" class="btn-verde">
+            Subir foto de carga
+          </button>
+        </div>
+
+        <div>
+          <p style="font-weight:600; margin-bottom:8px;">Foto: Entrega al cliente</p>
+          <div id="preview-entrega" class="foto-preview hidden"></div>
+          <input type="file" id="foto-entrega" accept="image/*"
+            onchange="previsualizarFoto(this, 'preview-entrega')"
+            style="margin-bottom:8px;">
+          <button onclick="subirFoto('fotoEntrega', 'foto-entrega')"
+            style="width:auto; padding:8px 16px;" class="btn-verde">
+            Subir foto de entrega
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DATOS DEL PEDIDO (editables) -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between;
+        align-items:center; margin-bottom:20px;">
+        <h4>📋 Datos del pedido</h4>
+        <div style="display:flex; gap:10px;">
+          <button id="btn-editar" onclick="activarEdicion()"
+            style="width:auto; padding:8px 16px; background:#1a1a2e;">
+            ✏️ Editar
+          </button>
+          <button id="btn-guardar" onclick="guardarCambios()"
+            class="btn-verde hidden" style="width:auto; padding:8px 16px;">
+            💾 Guardar cambios
+          </button>
+          <button id="btn-cancelar" onclick="cancelarEdicion()"
+            class="btn-secundario hidden" style="width:auto; padding:8px 16px;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      <p class="seccion-titulo">👤 Información del cliente</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Número de cliente</label>
+          <input type="text" id="numeroCliente" disabled>
+        </div>
+        <div class="form-group">
+          <label>Nombre / Razón social</label>
+          <input type="text" id="nombreCliente" disabled>
+        </div>
+      </div>
+
+      <p class="seccion-titulo" style="margin-top:20px;">🧾 Datos fiscales</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>RFC</label>
+          <input type="text" id="rfc" disabled>
+        </div>
+        <div class="form-group">
+          <label>Razón social fiscal</label>
+          <input type="text" id="razonSocial" disabled>
+        </div>
+        <div class="form-group">
+          <label>Uso de CFDI</label>
+          <select id="usoCFDI" disabled>
+            <option value="G01">G01 - Adquisición de mercancias</option>
+            <option value="G03">G03 - Gastos en general</option>
+            <option value="P01">P01 - Por definir</option>
+            <option value="S01">S01 - Sin efectos fiscales</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dirección fiscal</label>
+          <input type="text" id="direccionFiscal" disabled>
+        </div>
+      </div>
+
+      <p class="seccion-titulo" style="margin-top:20px;">🚚 Entrega</p>
+      <div class="form-group">
+        <label>Dirección de entrega</label>
+        <input type="text" id="direccionEntrega" disabled>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="notas" rows="3" disabled></textarea>
+      </div>
+
+    </div>
+
+    <!-- HISTORIAL DE ESTADOS -->
+    <div class="card">
+      <h4 style="margin-bottom:15px;">📜 Historial del pedido</h4>
+      <div id="historial-lista"></div>
+    </div>
+
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/pedidos.js"></script>
+  <script>
+
+    let pedidoActual = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      requiereLogin();
+      const sesion = getSesion();
+      document.getElementById('nombre-usuario').textContent =
+        `👤 ${sesion.nombre} (${sesion.rol})`;
+
+      // Obtenemos el ID del pedido desde la URL
+      const params = new URLSearchParams(window.location.search);
+      const id = parseInt(params.get('id'));
+
+      pedidoActual = getPedidoById(id);
+      if (!pedidoActual) {
+        alert('Pedido no encontrado');
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      cargarDatosPedido();
+      configurarPorRol();
+    });
+
+    // Llena todos los campos con los datos del pedido
+    function cargarDatosPedido() {
+      const p = pedidoActual;
+
+      document.getElementById('titulo-pedido').textContent = `Pedido #${p.factura}`;
+      document.getElementById('fecha-pedido').textContent =
+        `Registrado el ${formatearFecha(p.fecha)}`;
+
+      const badge = document.getElementById('badge-estado');
+      badge.textContent = p.estado;
+      badge.className = `badge ${getBadgeClase(p.estado)}`;
+
+      document.getElementById('numeroCliente').value    = p.numeroCliente || '';
+      document.getElementById('nombreCliente').value    = p.nombreCliente || '';
+      document.getElementById('rfc').value              = p.rfc || '';
+      document.getElementById('razonSocial').value      = p.razonSocial || '';
+      document.getElementById('usoCFDI').value          = p.usoCFDI || 'G01';
+      document.getElementById('direccionFiscal').value  = p.direccionFiscal || '';
+      document.getElementById('direccionEntrega').value = p.direccionEntrega || '';
+      document.getElementById('notas').value            = p.notas || '';
+
+      renderHistorial();
+      cargarFotosExistentes();
+    }
+
+    // Configura botones y secciones visibles según el rol
+    function configurarPorRol() {
+      const sesion = getSesion();
+      const rol = sesion.rol;
+      const estado = pedidoActual.estado;
+      const seccionEstado = document.getElementById('seccion-estado');
+      const botonesEstado = document.getElementById('botones-estado');
+
+      // Quién puede cambiar a qué estado
+      const transiciones = {
+        'almacen': {
+          'Ordenado':   [{ label: '🔄 Marcar En proceso', estado: 'En proceso' }],
+          'En proceso': [{ label: '🚚 Marcar En ruta',    estado: 'En ruta'    }]
+        },
+        'ruta': {
+          'En ruta': [{ label: '✅ Marcar Entregado', estado: 'Entregado' }]
+        },
+        'admin': {
+          'Ordenado':   [{ label: '🔄 Marcar En proceso', estado: 'En proceso' }],
+          'En proceso': [{ label: '🚚 Marcar En ruta',    estado: 'En ruta'    }],
+          'En ruta':    [{ label: '✅ Marcar Entregado',  estado: 'Entregado'  }]
+        }
+      };
+
+      const posibles = transiciones[rol]?.[estado];
+      if (posibles && posibles.length > 0) {
+        seccionEstado.classList.remove('hidden');
+        botonesEstado.innerHTML = '';
+        posibles.forEach(t => {
+          const btn = document.createElement('button');
+          btn.textContent = t.label;
+          btn.style.cssText = 'width:auto; padding:10px 20px;';
+          btn.onclick = () => cambiarEstado(t.estado);
+          botonesEstado.appendChild(btn);
+        });
+      }
+
+      // Sección de fotos: solo rol Ruta
+      if (tieneRol('ruta', 'admin')) {
+        document.getElementById('seccion-fotos').classList.remove('hidden');
+      }
+
+      // Botón eliminar: solo admin y ventas
+      if (!tieneRol('admin', 'ventas')) {
+        document.getElementById('btn-eliminar').classList.add('hidden');
+      }
+
+      // Botón editar: solo admin y ventas
+      if (!tieneRol('admin', 'ventas')) {
+        document.getElementById('btn-editar').classList.add('hidden');
+      }
+    }
+
+    // Cambia el estado del pedido
+    function cambiarEstado(nuevoEstado) {
+      if (!confirm(`¿Cambiar el estado a "${nuevoEstado}"?`)) return;
+      pedidoActual = actualizarPedido(pedidoActual.id, { estado: nuevoEstado });
+      cargarDatosPedido();
+      configurarPorRol();
+      mostrarMensaje('✅ Estado actualizado correctamente');
+    }
+
+    // Activa modo edición en los campos
+    function activarEdicion() {
+      const campos = ['numeroCliente','nombreCliente','rfc','razonSocial',
+                      'usoCFDI','direccionFiscal','direccionEntrega','notas'];
+      campos.forEach(id => {
+        document.getElementById(id).disabled = false;
+      });
+      document.getElementById('btn-editar').classList.add('hidden');
+      document.getElementById('btn-guardar').classList.remove('hidden');
+      document.getElementById('btn-cancelar').classList.remove('hidden');
+    }
+
+    // Cancela la edición y restaura los datos originales
+    function cancelarEdicion() {
+      cargarDatosPedido();
+      desactivarEdicion();
+    }
+
+    function desactivarEdicion() {
+      const campos = ['numeroCliente','nombreCliente','rfc','razonSocial',
+                      'usoCFDI','direccionFiscal','direccionEntrega','notas'];
+      campos.forEach(id => document.getElementById(id).disabled = true);
+      document.getElementById('btn-editar').classList.remove('hidden');
+      document.getElementById('btn-guardar').classList.add('hidden');
+      document.getElementById('btn-cancelar').classList.add('hidden');
+    }
+
+    // Guarda los cambios editados
+    function guardarCambios() {
+      const cambios = {
+        numeroCliente:    document.getElementById('numeroCliente').value.trim(),
+        nombreCliente:    document.getElementById('nombreCliente').value.trim(),
+        rfc:              document.getElementById('rfc').value.trim(),
+        razonSocial:      document.getElementById('razonSocial').value.trim(),
+        usoCFDI:          document.getElementById('usoCFDI').value,
+        direccionFiscal:  document.getElementById('direccionFiscal').value.trim(),
+        direccionEntrega: document.getElementById('direccionEntrega').value.trim(),
+        notas:            document.getElementById('notas').value.trim()
+      };
+
+      if (!cambios.numeroCliente || !cambios.nombreCliente ||
+          !cambios.rfc || !cambios.direccionEntrega) {
+        alert('Por favor completa los campos obligatorios');
+        return;
+      }
+
+      pedidoActual = actualizarPedido(pedidoActual.id, cambios);
+      desactivarEdicion();
+      mostrarMensaje('✅ Pedido actualizado correctamente');
+    }
+
+    // Elimina lógicamente el pedido
+    function eliminarEstePedido() {
+      if (!confirm('¿Eliminar este pedido? Podrás restaurarlo desde la papelera.')) return;
+      eliminarPedido(pedidoActual.id);
+      sessionStorage.setItem('mensaje', '🗑️ Pedido eliminado');
+      window.location.href = 'dashboard.html';
+    }
+
+    // Previsualiza la foto antes de subirla
+    function previsualizarFoto(input, previewId) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const preview = document.getElementById(previewId);
+        preview.innerHTML = `<img src="${e.target.result}"
+          style="max-width:100%; border-radius:8px; margin-bottom:8px;">`;
+        preview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Sube y guarda la foto en el pedido
+    function subirFoto(campo, inputId) {
+      const input = document.getElementById(inputId);
+      const file = input.files[0];
+      if (!file) {
+        alert('Selecciona una foto primero');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const cambios = {};
+        cambios[campo] = e.target.result;
+        pedidoActual = actualizarPedido(pedidoActual.id, cambios);
+        mostrarMensaje('📷 Foto guardada correctamente');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Muestra fotos ya guardadas en el pedido
+    function cargarFotosExistentes() {
+      if (pedidoActual.fotoUnidadCargada) {
+        const p = document.getElementById('preview-cargada');
+        p.innerHTML = `<img src="${pedidoActual.fotoUnidadCargada}"
+          style="max-width:100%; border-radius:8px; margin-bottom:8px;">`;
+        p.classList.remove('hidden');
+      }
+      if (pedidoActual.fotoEntrega) {
+        const p = document.getElementById('preview-entrega');
+        p.innerHTML = `<img src="${pedidoActual.fotoEntrega}"
+          style="max-width:100%; border-radius:8px; margin-bottom:8px;">`;
+        p.classList.remove('hidden');
+      }
+    }
+
+    // Renderiza el historial de cambios de estado
+    function renderHistorial() {
+      const lista = document.getElementById('historial-lista');
+      const historial = pedidoActual.historial || [];
+      lista.innerHTML = historial.map((h, i) => `
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+          <div style="width:12px; height:12px; border-radius:50%;
+            background:#e94560; flex-shrink:0;"></div>
+          <div>
+            <span class="badge ${getBadgeClase(h.estado)}">${h.estado}</span>
+            <span style="margin-left:10px; color:#888; font-size:0.85rem;">
+              ${formatearFecha(h.fecha)} — por ${h.usuario}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Muestra mensaje temporal en pantalla
+    function mostrarMensaje(texto) {
+      let el = document.getElementById('msg-temporal');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'msg-temporal';
+        el.className = 'success-msg';
+        el.style.cssText = 'position:fixed; top:20px; right:20px; z-index:999; width:auto;';
+        document.body.appendChild(el);
+      }
+      el.textContent = texto;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 3000);
+    }
+
+    function formatearFecha(fechaISO) {
+      const d = new Date(fechaISO);
+      return d.toLocaleDateString('es-MX', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function getBadgeClase(estado) {
+      const clases = {
+        'Ordenado':   'badge-ordenado',
+        'En proceso': 'badge-proceso',
+        'En ruta':    'badge-ruta',
+        'Entregado':  'badge-entregado'
+      };
+      return clases[estado] || '';
+    }
+
+  </script>
+</body>
+</html>

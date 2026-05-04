@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halcón — Dashboard</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <!-- BARRA DE NAVEGACIÓN -->
+  <nav class="navbar">
+    <h2>🦅 Halcón — Panel Administrativo</h2>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <span id="nombre-usuario"></span>
+      <button onclick="cerrarSesion()" style="width:auto; padding:8px 16px;">
+        Cerrar sesión
+      </button>
+    </div>
+  </nav>
+
+  <div class="contenedor">
+    <div id="mensaje-exito" class="success-msg hidden"></div>
+
+    <!-- BOTONES DE ACCIÓN SUPERIORES -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+      <h3>Pedidos activos</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <!-- Solo ventas y admin pueden crear pedidos -->
+        <button id="btn-nuevo" onclick="window.location.href='nuevo-pedido.html'"
+          style="width:auto; padding:10px 20px;">
+          + Nuevo pedido
+        </button>
+        <!-- Solo admin puede gestionar usuarios -->
+        <button id="btn-usuarios" onclick="window.location.href='usuarios.html'"
+          style="width:auto; padding:10px 20px; background:#1a1a2e;">
+          👥 Usuarios
+        </button>
+        <button onclick="window.location.href='eliminados.html'"
+          style="width:auto; padding:10px 20px;" class="btn-secundario">
+          🗑️ Eliminados
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTROS DE BÚSQUEDA -->
+    <div class="card" style="margin-bottom:20px;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px;">
+        <div class="form-group" style="margin:0;">
+          <label>Número de Factura</label>
+          <input type="text" id="filtro-factura" placeholder="Ej: 1001" oninput="filtrarPedidos()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Número de Cliente</label>
+          <input type="text" id="filtro-cliente" placeholder="Ej: CLI-001" oninput="filtrarPedidos()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Fecha</label>
+          <input type="date" id="filtro-fecha" oninput="filtrarPedidos()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Estado</label>
+          <select id="filtro-estado" onchange="filtrarPedidos()">
+            <option value="">Todos</option>
+            <option value="Ordenado">Ordenado</option>
+            <option value="En proceso">En proceso</option>
+            <option value="En ruta">En ruta</option>
+            <option value="Entregado">Entregado</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0; display:flex; align-items:flex-end;">
+          <button onclick="limpiarFiltros()" class="btn-secundario"
+            style="width:100%; padding:10px;">
+            Limpiar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA DE PEDIDOS -->
+    <div class="card">
+      <div id="sin-pedidos" class="hidden" style="text-align:center; padding:40px; color:#888;">
+        <p style="font-size:2rem;">📦</p>
+        <p>No hay pedidos que mostrar</p>
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="tabla-pedidos">
+          <thead>
+            <tr>
+              <th>Factura #</th>
+              <th>Cliente</th>
+              <th>N° Cliente</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-tabla">
+            <!-- Se llena con JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/pedidos.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>

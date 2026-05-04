@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halcón — Nuevo Pedido</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <h2>🦅 Halcón — Nuevo Pedido</h2>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <span id="nombre-usuario"></span>
+      <button onclick="window.location.href='dashboard.html'"
+        style="width:auto; padding:8px 16px; background:#6c757d;">
+        ← Volver
+      </button>
+    </div>
+  </nav>
+
+  <div class="contenedor">
+    <div class="card">
+      <h3 style="margin-bottom:25px;">📋 Datos del nuevo pedido</h3>
+
+      <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
+      <p class="seccion-titulo">👤 Información del cliente</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Número de cliente *</label>
+          <input type="text" id="numeroCliente" placeholder="Ej: CLI-001">
+        </div>
+        <div class="form-group">
+          <label>Nombre / Razón social *</label>
+          <input type="text" id="nombreCliente" placeholder="Nombre completo o empresa">
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: DATOS FISCALES -->
+      <p class="seccion-titulo" style="margin-top:20px;">🧾 Datos fiscales</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>RFC *</label>
+          <input type="text" id="rfc" placeholder="Ej: XAXX010101000" maxlength="13">
+        </div>
+        <div class="form-group">
+          <label>Razón social fiscal *</label>
+          <input type="text" id="razonSocial" placeholder="Nombre para la factura">
+        </div>
+        <div class="form-group">
+          <label>Uso de CFDI</label>
+          <select id="usoCFDI">
+            <option value="G01">G01 - Adquisición de mercancias</option>
+            <option value="G03">G03 - Gastos en general</option>
+            <option value="P01">P01 - Por definir</option>
+            <option value="S01">S01 - Sin efectos fiscales</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dirección fiscal</label>
+          <input type="text" id="direccionFiscal" placeholder="Calle, número, colonia, CP">
+        </div>
+      </div>
+
+      <!-- SECCIÓN 3: ENTREGA -->
+      <p class="seccion-titulo" style="margin-top:20px;">🚚 Datos de entrega</p>
+
+      <div class="form-group">
+        <label>Dirección de entrega *</label>
+        <input type="text" id="direccionEntrega"
+          placeholder="Dirección donde se entregará el pedido">
+      </div>
+
+      <div class="form-group">
+        <label>Notas o información adicional</label>
+        <textarea id="notas" rows="3"
+          placeholder="Referencias, instrucciones especiales, contacto en obra..."></textarea>
+      </div>
+
+      <!-- MENSAJE DE ERROR -->
+      <div id="error-msg" class="error-msg hidden"></div>
+
+      <!-- BOTONES -->
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button onclick="guardarPedido()" class="btn-verde">
+          ✅ Guardar pedido
+        </button>
+        <button onclick="window.location.href='dashboard.html'" class="btn-secundario">
+          Cancelar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/pedidos.js"></script>
+  <script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // Solo ventas y admin pueden acceder
+      requiereLogin();
+      if (!tieneRol('admin', 'ventas')) {
+        alert('No tienes permiso para crear pedidos.');
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      const sesion = getSesion();
+      document.getElementById('nombre-usuario').textContent =
+        `👤 ${sesion.nombre} (${sesion.rol})`;
+    });
+
+    function guardarPedido() {
+      // Leemos todos los campos
+      const numeroCliente    = document.getElementById('numeroCliente').value.trim();
+      const nombreCliente    = document.getElementById('nombreCliente').value.trim();
+      const rfc              = document.getElementById('rfc').value.trim();
+      const razonSocial      = document.getElementById('razonSocial').value.trim();
+      const usoCFDI          = document.getElementById('usoCFDI').value;
+      const direccionFiscal  = document.getElementById('direccionFiscal').value.trim();
+      const direccionEntrega = document.getElementById('direccionEntrega').value.trim();
+      const notas            = document.getElementById('notas').value.trim();
+
+      // Validamos campos obligatorios
+      const errorEl = document.getElementById('error-msg');
+      if (!numeroCliente || !nombreCliente || !rfc || !razonSocial || !direccionEntrega) {
+        errorEl.textContent = '⚠️ Por favor completa todos los campos obligatorios (*)';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      errorEl.classList.add('hidden');
+
+      // Creamos el pedido
+      crearPedido({
+        numeroCliente,
+        nombreCliente,
+        rfc,
+        razonSocial,
+        usoCFDI,
+        direccionFiscal,
+        direccionEntrega,
+        notas
+      });
+
+      // Regresamos al dashboard con mensaje de éxito
+      sessionStorage.setItem('mensaje', '✅ Pedido creado exitosamente');
+      window.location.href = 'dashboard.html';
+    }
+
+  </script>
+</body>
+</html>
